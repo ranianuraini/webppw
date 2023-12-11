@@ -2,36 +2,32 @@ import streamlit as st
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
-from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
+from sklearn.pipeline import make_pipeline
 
-# Muat model dan vectorizer yang telah dilatih
-# Gantilah 'your_model.pkl' dan 'your_vectorizer.pkl' dengan nama file sesungguhnya
-import pickle
-with open('your_model.pkl', 'rb') as model_file:
-    nb_classifier = pickle.load(model_file)
+# Load data
+data_url = "https://raw.githubusercontent.com/ranianuraini/PencarianPenambanganWeb/main/DataOlah_Antara.csv"
+df = pd.read_csv(data_url)
 
-with open('your_vectorizer.pkl', 'rb') as vectorizer_file:
-    vectorizer = pickle.load(vectorizer_file)
+# Preprocessing
+X = df['isi_berita']
+y = df['kategori']
 
-# Aplikasi Streamlit
-st.title('Prediksi Kategori Berita')
+# Build a classifier
+model = make_pipeline(TfidfVectorizer(), MultinomialNB())
+model.fit(X, y)
 
-# Input teks untuk pengguna memasukkan artikel berita
-user_input = st.text_area("Masukkan artikel berita Anda:", "")
+# Streamlit App
+def predict_category(news_text):
+    prediction = model.predict([news_text])
+    return prediction[0]
 
-if st.button('Prediksi'):
-    # Pembersihan dan pemrosesan teks
-    user_input = cleaning(user_input)
-    user_input_tokens = word_tokenize(user_input)
-    user_input_tokens = [w for w in user_input_tokens if not w in stop_words]
-    user_input_tokens = stemmer.stem(' '.join(user_input_tokens)).split(' ')
-    user_input_tokens = ' '.join(user_input_tokens)
+st.title("Aplikasi Prediksi Kategori Berita")
 
-    # Transformasi input pengguna menggunakan vectorizer
-    user_input_tfidf = vectorizer.transform([user_input_tokens])
+news_text = st.text_area("Masukkan teks berita di sini:")
 
-    # Melakukan prediksi menggunakan klasifikasi Naive Bayes yang telah dilatih
-    prediction = nb_classifier.predict(user_input_tfidf)
-
-    st.subheader('Prediksi:')
-    st.write(f"Kategori yang diprediksi untuk artikel yang diberikan adalah: {prediction[0]}")
+if st.button("Prediksi"):
+    if news_text:
+        prediction = predict_category(news_text)
+        st.success(f"Kategori berita diprediksi sebagai: {prediction}")
+    else:
+        st.warning("Silakan masukkan teks berita terlebih dahulu.")
